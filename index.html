@@ -1061,12 +1061,13 @@
       a.addEventListener('click', (e) => {
         hamburger.classList.remove('open');
         navLinks.classList.remove('open');
-        if (!a.hash || !DYNAMIC_ANCHORS.has(a.hash)) return;
+        const href = a.getAttribute('href');
+        if (!href || !DYNAMIC_ANCHORS.has(href)) return;
         e.preventDefault();
-        history.pushState(null, '', a.hash);
+        history.pushState(null, '', href);
         // Wait for dynamic sections to finish loading, then scroll accurately
         Promise.allSettled([window._eventsReady, window._boardReady]).then(() => {
-          scrollToAnchor(a.hash);
+          scrollToAnchor(href);
         });
       });
     });
