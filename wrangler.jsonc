@@ -1,26 +1,27 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "damp-limit-b57b",
-  "main": "src/index.js",
-  "compatibility_date": "2025-09-27",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    // Static files served by the Worker via env.ASSETS.fetch()
-    "directory": ".",
-    "binding": "ASSETS"
-  },
-  "kv_namespaces": [
-    {
-      // Run: npx wrangler kv namespace create EVENTS_KV
-      // Then replace the placeholder IDs below with the output values.
-      "binding": "EVENTS_KV",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID",
-      "preview_id": "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
-    }
-  ],
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "damp-limit-b57b",
+	"main": "src/index.js",
+	"compatibility_date": "2025-09-27",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		// Static files served by the Worker via env.ASSETS.fetch()
+		"directory": ".",
+		"binding": "ASSETS"
+	},
+	"kv_namespaces": [
+		{
+			// Run: npx wrangler kv namespace create EVENTS_KV
+			// Then replace the placeholder IDs below with the output values.
+			"binding": "EVENTS_KV",
+			"id": "e7681e084ca04c268958170fab509b67",
+			"preview_id": "e7681e084ca04c268958170fab509b67",
+			"remote": true
+		}
+	],
+	"compatibility_flags": [
+		"nodejs_compat"
+	]
 }
