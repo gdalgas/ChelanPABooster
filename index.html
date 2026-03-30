@@ -1063,6 +1063,7 @@
         navLinks.classList.remove('open');
         if (!a.hash || !DYNAMIC_ANCHORS.has(a.hash)) return;
         e.preventDefault();
+        history.pushState(null, '', a.hash);
         // Wait for dynamic sections to finish loading, then scroll accurately
         Promise.allSettled([window._eventsReady, window._boardReady]).then(() => {
           scrollToAnchor(a.hash);
