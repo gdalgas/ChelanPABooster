@@ -660,8 +660,8 @@
       .nav-links { gap: 1.2rem; }
       .involve-grid { grid-template-columns: 1fr; }
       .about-grid { grid-template-columns: 1fr; gap: 3rem; }
-      .event-item { grid-template-columns: 70px 1fr; }
-      .event-action { display: none; }
+      .event-item { grid-template-columns: 70px 1fr; grid-template-rows: auto auto; }
+      .event-action { grid-column: 2; margin-top: .5rem; align-self: start; }
     }
     /* ── HAMBURGER ───────────────────────────────────────── */
     .nav-hamburger {
@@ -709,6 +709,7 @@
       .involve-card { padding: 2.5rem 1.8rem; }
       .event-item { grid-template-columns: 1fr; }
       .event-date-box { border-right: none; border-bottom: 1px solid rgba(225,225,225,.12); padding: 0 0 .8rem; text-align: left; display: flex; gap: .8rem; align-items: baseline; }
+      .event-action { grid-column: 1; margin-top: .8rem; display: inline-block; align-self: start; }
       .about-stat-grid { grid-template-columns: 1fr 1fr; }
     }
 
