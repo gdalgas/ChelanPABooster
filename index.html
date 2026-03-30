@@ -1064,29 +1064,26 @@
     }, { threshold: 0.1 });
     reveals.forEach(el => observer.observe(el));
 
-    // ── Page routing — scroll to section based on URL path ──────────────────
-    (function routeToSection() {
-      const pathMap = {
-        '/mission':    'mission',
-        '/what-we-do': 'what-we-do',
-        '/who-we-are': 'board',
-        '/events':     'events',
-        '/about':      'about',
-      };
-      const sectionId = pathMap[window.location.pathname];
-      if (!sectionId) return;
-      const el = document.getElementById(sectionId);
+    // ── Page routing — scroll after dynamic content settles ─────────────────
+    const PATH_TO_SECTION = {
+      '/mission':    'mission',
+      '/what-we-do': 'what-we-do',
+      '/who-we-are': 'board',
+      '/events':     'events',
+      '/about':      'about',
+    };
+    const pendingScrollId = PATH_TO_SECTION[window.location.pathname] || null;
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
       if (!el) return;
-      // Use instant scroll so the page doesn't visibly start at top then jump
-      requestAnimationFrame(() => {
-        const navH = document.getElementById('nav').offsetHeight;
-        const top = el.getBoundingClientRect().top + window.scrollY - navH;
-        window.scrollTo({ top, behavior: 'instant' });
-      });
-    })();
+      const navH = document.getElementById('nav').offsetHeight;
+      const top = el.getBoundingClientRect().top + window.scrollY - navH;
+      window.scrollTo({ top, behavior: 'instant' });
+    }
 
     // ── Dynamic Events ──────────────────────────────────────────────────────
-    (function loadEvents() {
+    const eventsReady = (function loadEvents() {
       const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const upcomingEl = document.getElementById('events-upcoming');
       const pastWrapEl = document.getElementById('events-past-wrap');
@@ -1122,7 +1119,7 @@
         </div>`;
       }
 
-      fetch('/api/events')
+      return fetch('/api/events')
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(events => {
           const today = new Date().toISOString().slice(0, 10);
@@ -1136,7 +1133,6 @@
           if (upcoming.length) {
             upcomingEl.innerHTML = upcoming.map(eventHTML).join('');
             moreNote.style.display = 'none';
-            // Trigger reveal animations for newly added items
             upcomingEl.querySelectorAll('.event-item').forEach(el => {
               el.classList.add('visible');
             });
@@ -1154,13 +1150,12 @@
           }
         })
         .catch(() => {
-          // On error fall back to a friendly message
           upcomingEl.innerHTML = '<p style="color:var(--muted);font-size:.88rem;padding:1.5rem 0;">Unable to load events right now. Check our <a href="https://www.zeffy.com/en-US/organizations/chelan-high-school-performing-arts-booster" target="_blank" style="color:inherit;">Zeffy page</a> for the latest.</p>';
         });
     })();
 
     // ── Board Members ─────────────────────────────────────
-    (function loadBoard() {
+    const boardReady = (function loadBoard() {
       const grid = document.getElementById('board-grid');
 
       function escHtml(str) {
@@ -1185,7 +1180,7 @@
         </div>`;
       }
 
-      fetch('/api/board')
+      return fetch('/api/board')
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(members => {
           const sorted = members.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
@@ -1200,6 +1195,13 @@
           grid.closest('section').style.display = 'none';
         });
     })();
+
+    // Scroll only after both dynamic sections have rendered
+    if (pendingScrollId) {
+      Promise.allSettled([eventsReady, boardReady]).then(() => {
+        scrollToSection(pendingScrollId);
+      });
+    }
   </script>
 </body>
 </html>
