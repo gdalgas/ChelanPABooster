@@ -340,12 +340,89 @@
     .modal-body { font-size: .88rem; color: var(--gold-dim); margin-bottom: 1.5rem; }
     .modal-actions { display: flex; gap: .7rem; justify-content: flex-end; }
 
+    /* ── TABS ───────────────────────────────────────────────── */
+    .admin-tabs {
+      background: var(--forest-deep);
+      border-bottom: 1px solid rgba(225,225,225,.1);
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+    }
+    .tab-btn {
+      font-family: var(--sans);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted-dark);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: .85rem 1.2rem;
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover { color: var(--muted); }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── BOARD MEMBER ROW ──────────────────────────────────── */
+    .member-row {
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      gap: 1.2rem;
+      align-items: center;
+      background: rgba(0,0,0,.15);
+      border: 1px solid rgba(225,225,225,.07);
+      border-radius: 4px;
+      padding: .85rem 1.2rem;
+      margin-bottom: 6px;
+      transition: background .2s;
+    }
+    .member-row:hover { background: rgba(0,0,0,.25); }
+    .member-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--forest-mid);
+      border: 1px solid rgba(225,225,225,.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--serif);
+      font-size: .95rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .member-thumb img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .member-row-name { font-family: var(--serif); font-size: 1rem; color: var(--warm-white); }
+    .member-row-role { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+    .member-row-actions { display: flex; gap: .5rem; flex-shrink: 0; }
+
+    /* ── IMAGE PREVIEW ─────────────────────────────────────── */
+    .image-preview-wrap { margin-top: .6rem; }
+    .image-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(225,225,225,.15);
+      display: none;
+    }
+    .image-preview.visible { display: block; }
+
     @media (max-width: 560px) {
       .form-grid { grid-template-columns: 1fr; }
       .form-grid .field-full { grid-column: 1; }
       .event-row { grid-template-columns: 55px 1fr; }
       .event-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
+      .member-row { grid-template-columns: 44px 1fr; }
+      .member-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
       .admin-main { padding: 1.5rem 1rem; }
+      .admin-tabs { padding: 0 1rem; }
     }
   </style>
 </head>
@@ -372,12 +449,20 @@
 <div id="admin-app">
   <header class="admin-header">
     <div>
-      <span class="admin-brand">Chelan PA Booster <span>Events Manager</span></span>
+      <span class="admin-brand">Chelan PA Booster <span>Admin</span></span>
     </div>
     <button id="logout-btn" class="btn btn-outline btn-sm">Log Out</button>
   </header>
 
+  <nav class="admin-tabs">
+    <button class="tab-btn active" data-tab="events-panel">Events</button>
+    <button class="tab-btn" data-tab="board-panel">Board Members</button>
+  </nav>
+
   <main class="admin-main">
+
+    <!-- ── EVENTS PANEL ── -->
+    <div id="events-panel" class="tab-panel active">
 
     <!-- Add / Edit Event Form -->
     <div class="card" id="form-card">
@@ -434,13 +519,65 @@
       </div>
     </div>
 
+    </div><!-- /events-panel -->
+
+    <!-- ── BOARD PANEL ── -->
+    <div id="board-panel" class="tab-panel">
+
+      <!-- Add / Edit Board Member Form -->
+      <div class="card" id="board-form-card">
+        <h2 class="card-title" id="board-form-title">Add <em>Board Member</em></h2>
+        <form id="board-form" novalidate>
+          <input type="hidden" id="b-edit-id" value="" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="b-name">Name *</label>
+              <input type="text" id="b-name" placeholder="e.g. Jane Smith" required />
+            </div>
+            <div class="field">
+              <label for="b-role">Role *</label>
+              <input type="text" id="b-role" placeholder="e.g. President" required />
+            </div>
+            <div class="field field-full">
+              <label for="b-bio">Bio / Description</label>
+              <textarea id="b-bio" rows="3" placeholder="A short bio or description…"></textarea>
+            </div>
+            <div class="field">
+              <label for="b-order">Display Order</label>
+              <input type="number" id="b-order" placeholder="0" min="0" />
+            </div>
+            <div class="field">
+              <label for="b-image">Headshot Photo</label>
+              <input type="file" id="b-image" accept="image/*" />
+              <div class="image-preview-wrap">
+                <img id="b-image-preview" class="image-preview" src="" alt="Preview" />
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="board-submit-btn" class="btn btn-primary">Add Member</button>
+            <button type="button" id="board-cancel-btn" class="btn btn-outline" style="display:none">Cancel</button>
+            <span id="board-form-msg" class="form-msg"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Board Members List -->
+      <div class="card">
+        <h2 class="card-title">All <em>Board Members</em></h2>
+        <div id="board-loading" style="text-align:center;padding:2rem;color:var(--muted-dark);font-size:.88rem;">Loading…</div>
+        <div id="board-list" style="display:none"></div>
+      </div>
+
+    </div><!-- /board-panel -->
+
   </main>
 </div>
 
 <!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────────────── -->
 <div class="modal-overlay" id="delete-modal">
   <div class="modal">
-    <h2 class="modal-title">Delete Event?</h2>
+    <h2 class="modal-title" id="delete-modal-title">Delete Event?</h2>
     <p class="modal-body" id="delete-modal-body">This action cannot be undone.</p>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" id="delete-cancel-btn">Cancel</button>
@@ -455,7 +592,9 @@
   // ── State ────────────────────────────────────────────────────────────────
   let token = sessionStorage.getItem('admin_token') || '';
   let allEvents = [];
+  let allMembers = [];
   let pendingDeleteId = null;
+  let pendingDeleteType = null; // 'event' | 'member'
 
   // ── DOM refs ─────────────────────────────────────────────────────────────
   const loginScreen  = document.getElementById('login-screen');
@@ -473,15 +612,29 @@
   const eventsList   = document.getElementById('events-list');
   const upcomingList = document.getElementById('upcoming-list');
   const pastList     = document.getElementById('past-list');
-  const deleteModal  = document.getElementById('delete-modal');
-  const deleteBody   = document.getElementById('delete-modal-body');
+  const deleteModal      = document.getElementById('delete-modal');
+  const deleteModalTitle = document.getElementById('delete-modal-title');
+  const deleteBody       = document.getElementById('delete-modal-body');
   const deleteCancelBtn  = document.getElementById('delete-cancel-btn');
   const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+
+  // ── Board DOM refs ────────────────────────────────────────────────────────
+  const boardForm        = document.getElementById('board-form');
+  const boardFormTitle   = document.getElementById('board-form-title');
+  const boardSubmit      = document.getElementById('board-submit-btn');
+  const boardCancel      = document.getElementById('board-cancel-btn');
+  const boardFormMsg     = document.getElementById('board-form-msg');
+  const boardEditId      = document.getElementById('b-edit-id');
+  const boardLoading     = document.getElementById('board-loading');
+  const boardList        = document.getElementById('board-list');
+  const boardImageInput  = document.getElementById('b-image');
+  const boardImagePreview= document.getElementById('b-image-preview');
 
   // ── Init ─────────────────────────────────────────────────────────────────
   if (token) {
     showApp();
     loadEvents();
+    loadBoard();
   }
 
   // ── Login ────────────────────────────────────────────────────────────────
@@ -504,6 +657,7 @@
         sessionStorage.setItem('admin_token', token);
         showApp();
         loadEvents();
+        loadBoard();
       } else {
         showLoginError(data.error || 'Sign in failed');
       }
@@ -665,31 +819,26 @@
     formMsg.className = `form-msg alert alert-${type}`;
   }
 
-  // ── Delete Modal ─────────────────────────────────────────────────────────
-  function confirmDelete(id, name) {
-    pendingDeleteId = id;
-    deleteBody.textContent = `Delete "${name}"? This cannot be undone.`;
-    deleteModal.classList.add('open');
-  }
-
-  deleteCancelBtn.addEventListener('click', () => {
-    deleteModal.classList.remove('open');
-    pendingDeleteId = null;
-  });
 
   deleteConfirmBtn.addEventListener('click', async () => {
     if (!pendingDeleteId) return;
     deleteConfirmBtn.disabled = true;
+    const endpoint = pendingDeleteType === 'member'
+      ? `/api/board/${pendingDeleteId}`
+      : `/api/events/${pendingDeleteId}`;
     try {
-      const res = await fetch(`/api/events/${pendingDeleteId}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
+      const res = await fetch(endpoint, { method: 'DELETE', headers: authHeaders() });
       if (res.status === 401) { handleUnauthorized(); return; }
       deleteModal.classList.remove('open');
+      if (pendingDeleteType === 'member') {
+        if (boardEditId.value === pendingDeleteId) resetBoardForm();
+        await loadBoard();
+      } else {
+        if (editIdField.value === pendingDeleteId) resetForm();
+        await loadEvents();
+      }
       pendingDeleteId = null;
-      if (editIdField.value === pendingDeleteId) resetForm();
-      await loadEvents();
+      pendingDeleteType = null;
     } catch {
       deleteModal.classList.remove('open');
     } finally {
@@ -702,8 +851,180 @@
     if (e.target === deleteModal) {
       deleteModal.classList.remove('open');
       pendingDeleteId = null;
+      pendingDeleteType = null;
     }
   });
+
+  deleteCancelBtn.addEventListener('click', () => {
+    deleteModal.classList.remove('open');
+    pendingDeleteId = null;
+    pendingDeleteType = null;
+  });
+
+  // ── Tab Switching ────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── Load Board Members ───────────────────────────────────────────────────
+  async function loadBoard() {
+    boardLoading.style.display = 'block';
+    boardList.style.display = 'none';
+    try {
+      const res = await fetch('/api/board');
+      if (!res.ok) throw new Error('Failed to load');
+      allMembers = await res.json();
+      renderBoard();
+    } catch {
+      boardLoading.textContent = 'Failed to load board members.';
+    }
+  }
+
+  function renderBoard() {
+    const sorted = allMembers.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+    boardList.innerHTML = sorted.length
+      ? sorted.map(memberRowHTML).join('')
+      : '<div class="empty-state">No board members yet.</div>';
+    boardLoading.style.display = 'none';
+    boardList.style.display = 'block';
+  }
+
+  function memberInitials(name) {
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  function memberRowHTML(m) {
+    const thumb = m.image
+      ? `<div class="member-thumb"><img src="${m.image}" alt="${escHtml(m.name)}" /></div>`
+      : `<div class="member-thumb">${escHtml(memberInitials(m.name))}</div>`;
+    return `<div class="member-row">
+      ${thumb}
+      <div>
+        <div class="member-row-name">${escHtml(m.name)}</div>
+        <div class="member-row-role">${escHtml(m.role)}</div>
+      </div>
+      <div class="member-row-actions">
+        <button class="btn btn-outline btn-sm" onclick="startEditMember('${m.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteMember('${m.id}', '${escAttr(m.name)}')">Delete</button>
+      </div>
+    </div>`;
+  }
+
+  // ── Board Form ───────────────────────────────────────────────────────────
+  let pendingImageBase64 = '';
+
+  boardImageInput.addEventListener('change', () => {
+    const file = boardImageInput.files[0];
+    if (!file) { pendingImageBase64 = ''; boardImagePreview.classList.remove('visible'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      pendingImageBase64 = e.target.result;
+      boardImagePreview.src = pendingImageBase64;
+      boardImagePreview.classList.add('visible');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  boardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = boardEditId.value;
+    const existingMember = id ? allMembers.find(m => m.id === id) : null;
+    const payload = {
+      name:  document.getElementById('b-name').value.trim(),
+      role:  document.getElementById('b-role').value.trim(),
+      bio:   document.getElementById('b-bio').value.trim(),
+      order: parseInt(document.getElementById('b-order').value, 10) || 0,
+      image: pendingImageBase64 || (existingMember ? existingMember.image : ''),
+    };
+    if (!payload.name || !payload.role) {
+      setBoardFormMsg('Name and role are required.', 'error');
+      return;
+    }
+    boardSubmit.disabled = true;
+    setBoardFormMsg('');
+    try {
+      const res = await fetch(id ? `/api/board/${id}` : '/api/board', {
+        method: id ? 'PUT' : 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) { handleUnauthorized(); return; }
+      if (!res.ok) throw new Error('Save failed');
+      setBoardFormMsg(id ? 'Member updated.' : 'Member added.', 'success');
+      resetBoardForm();
+      await loadBoard();
+    } catch {
+      setBoardFormMsg('Save failed. Please try again.', 'error');
+    } finally {
+      boardSubmit.disabled = false;
+    }
+  });
+
+  boardCancel.addEventListener('click', resetBoardForm);
+
+  function startEditMember(id) {
+    const m = allMembers.find(m => m.id === id);
+    if (!m) return;
+    boardEditId.value = id;
+    document.getElementById('b-name').value  = m.name || '';
+    document.getElementById('b-role').value  = m.role || '';
+    document.getElementById('b-bio').value   = m.bio  || '';
+    document.getElementById('b-order').value = m.order ?? 0;
+    boardImageInput.value = '';
+    pendingImageBase64 = '';
+    if (m.image) {
+      boardImagePreview.src = m.image;
+      boardImagePreview.classList.add('visible');
+    } else {
+      boardImagePreview.classList.remove('visible');
+    }
+    boardFormTitle.innerHTML = 'Edit <em>Board Member</em>';
+    boardSubmit.textContent = 'Save Changes';
+    boardCancel.style.display = 'inline-block';
+    setBoardFormMsg('');
+    document.getElementById('board-form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Switch to board tab if needed
+    document.querySelector('[data-tab="board-panel"]').click();
+  }
+
+  function resetBoardForm() {
+    boardEditId.value = '';
+    boardForm.reset();
+    pendingImageBase64 = '';
+    boardImagePreview.src = '';
+    boardImagePreview.classList.remove('visible');
+    boardFormTitle.innerHTML = 'Add <em>Board Member</em>';
+    boardSubmit.textContent = 'Add Member';
+    boardCancel.style.display = 'none';
+    setBoardFormMsg('');
+  }
+
+  function setBoardFormMsg(msg, type = '') {
+    if (!msg) { boardFormMsg.textContent = ''; boardFormMsg.className = 'form-msg'; return; }
+    boardFormMsg.textContent = msg;
+    boardFormMsg.className = `form-msg alert alert-${type}`;
+  }
+
+  function confirmDeleteMember(id, name) {
+    pendingDeleteId = id;
+    pendingDeleteType = 'member';
+    deleteModalTitle.textContent = 'Delete Board Member?';
+    deleteBody.textContent = `Delete "${name}"? This cannot be undone.`;
+    deleteModal.classList.add('open');
+  }
+
+  function confirmDelete(id, name) {
+    pendingDeleteId = id;
+    pendingDeleteType = 'event';
+    deleteModalTitle.textContent = 'Delete Event?';
+    deleteBody.textContent = `Delete "${name}"? This cannot be undone.`;
+    deleteModal.classList.add('open');
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function escHtml(str) {

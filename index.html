@@ -546,6 +546,81 @@
 
     .events-more { text-align: center; margin-top: 3rem; }
 
+    /* ── BOARD ───────────────────────────────────────────── */
+    #board {
+      background: var(--forest-dark);
+      border-top: 1px solid rgba(225,225,225,.08);
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+      margin-top: 3rem;
+    }
+
+    .board-card {
+      text-align: center;
+    }
+
+    .board-photo {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(225,225,225,.15);
+      margin: 0 auto 1.2rem;
+      display: block;
+      background: var(--forest-mid);
+    }
+
+    .board-initials {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 2px solid rgba(225,225,225,.15);
+      margin: 0 auto 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--forest-mid);
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .board-name {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--warm-white);
+      margin-bottom: .25rem;
+    }
+
+    .board-role {
+      font-family: var(--sans);
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: .9rem;
+    }
+
+    .board-bio {
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    @media (max-width: 900px) {
+      .board-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .board-grid { grid-template-columns: 1fr; max-width: 360px; margin-left: auto; margin-right: auto; }
+    }
+
     /* ── ABOUT ───────────────────────────────────────────── */
     #about {
       background: var(--forest-deep);
@@ -743,6 +818,7 @@
     <ul class="nav-links" id="nav-links">
       <li><a href="#mission">Mission</a></li>
       <li><a href="#what-we-do">What We Do</a></li>
+      <li><a href="#board">Who We Are</a></li>
       <li><a href="#events">Events</a></li>
       <li><a href="#about">About</a></li>
       <li><a href="https://www.zeffy.com/en-US/donation-form/making-a-difference-5" target="_blank" class="nav-cta">Donate</a></li>
@@ -868,6 +944,16 @@
         <a href="https://www.zeffy.com/en-US/organizations/chelan-high-school-performing-arts-booster" target="_blank" class="btn-outline" style="margin-right:.8rem;">All Events on Zeffy</a>
         <a href="https://www.facebook.com/profile.php?id=61588188177984" target="_blank" class="btn-outline">Follow on Facebook</a>
       </div>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section id="board">
+    <div class="container">
+      <p class="section-label reveal">Who We Are</p>
+      <h2 class="section-title reveal reveal-delay-1">Meet the <em>Board</em></h2>
+      <p class="section-lead reveal reveal-delay-2">Dedicated volunteers committed to supporting Chelan's performing arts students.</p>
+      <div id="board-grid" class="board-grid"></div>
     </div>
   </section>
 
@@ -1049,6 +1135,48 @@
         .catch(() => {
           // On error fall back to a friendly message
           upcomingEl.innerHTML = '<p style="color:var(--muted);font-size:.88rem;padding:1.5rem 0;">Unable to load events right now. Check our <a href="https://www.zeffy.com/en-US/organizations/chelan-high-school-performing-arts-booster" target="_blank" style="color:inherit;">Zeffy page</a> for the latest.</p>';
+        });
+    })();
+
+    // ── Board Members ─────────────────────────────────────
+    (function loadBoard() {
+      const grid = document.getElementById('board-grid');
+
+      function escHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function initials(name) {
+        return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      }
+
+      function memberHTML(m) {
+        const photo = m.image
+          ? `<img class="board-photo" src="${m.image}" alt="${escHtml(m.name)}" loading="lazy" />`
+          : `<div class="board-initials">${escHtml(initials(m.name))}</div>`;
+        return `<div class="board-card reveal">
+          ${photo}
+          <div class="board-name">${escHtml(m.name)}</div>
+          <div class="board-role">${escHtml(m.role)}</div>
+          ${m.bio ? `<p class="board-bio">${escHtml(m.bio)}</p>` : ''}
+        </div>`;
+      }
+
+      fetch('/api/board')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(members => {
+          const sorted = members.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+          if (!sorted.length) {
+            grid.closest('section').style.display = 'none';
+            return;
+          }
+          grid.innerHTML = sorted.map(memberHTML).join('');
+          grid.querySelectorAll('.board-card').forEach(el => el.classList.add('visible'));
+        })
+        .catch(() => {
+          grid.closest('section').style.display = 'none';
         });
     })();
   </script>

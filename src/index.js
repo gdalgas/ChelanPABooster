@@ -3,15 +3,19 @@
  *
  * Routes:
  *   GET  /api/events            – public list of all events
+ *   GET  /api/board             – public list of board members
  *   POST /api/admin/login       – validate admin password
  *   POST /api/events            – create event  (requires auth)
  *   PUT  /api/events/:id        – update event  (requires auth)
  *   DELETE /api/events/:id      – delete event  (requires auth)
+ *   POST /api/board             – create board member  (requires auth)
+ *   PUT  /api/board/:id         – update board member  (requires auth)
+ *   DELETE /api/board/:id       – delete board member  (requires auth)
  *   *                           – serve static assets
  *
  * Required environment:
  *   ADMIN_PASSWORD  (Cloudflare secret)  – admin login password
- *   EVENTS_KV       (KV binding)         – event storage
+ *   EVENTS_KV       (KV binding)         – event + board storage
  *   ASSETS          (Assets binding)     – static file serving
  */
 
@@ -65,6 +69,8 @@ function isAuthorized(request, env) {
   return token === env.ADMIN_PASSWORD;
 }
 
+// ── Events ───────────────────────────────────────────────────────────────────
+
 async function getEvents(env) {
   const raw = await env.EVENTS_KV.get('events');
   if (!raw) return [...SEED_EVENTS];
@@ -92,6 +98,33 @@ function sanitizeEvent(body, existing = {}) {
   };
 }
 
+// ── Board Members ─────────────────────────────────────────────────────────────
+
+async function getBoard(env) {
+  const raw = await env.EVENTS_KV.get('board');
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+async function saveBoard(env, members) {
+  await env.EVENTS_KV.put('board', JSON.stringify(members));
+}
+
+function sanitizeMember(body, existing = {}) {
+  return {
+    ...existing,
+    name:  String(body.name  ?? existing.name  ?? '').trim(),
+    role:  String(body.role  ?? existing.role  ?? '').trim(),
+    bio:   String(body.bio   ?? existing.bio   ?? '').trim(),
+    image: String(body.image ?? existing.image ?? '').trim(),
+    order: Number.isFinite(Number(body.order)) ? Number(body.order) : (existing.order ?? 0),
+  };
+}
+
 // ── API Router ────────────────────────────────────────────────────────────────
 
 async function handleApi(request, env, url) {
@@ -103,6 +136,12 @@ async function handleApi(request, env, url) {
   if (url.pathname === '/api/events' && request.method === 'GET') {
     const events = await getEvents(env);
     return jsonResponse(events);
+  }
+
+  // ── Public: GET /api/board ───────────────────────────────
+  if (url.pathname === '/api/board' && request.method === 'GET') {
+    const members = await getBoard(env);
+    return jsonResponse(members);
   }
 
   // ── Public: POST /api/admin/login ───────────────────────
@@ -146,11 +185,11 @@ async function handleApi(request, env, url) {
   }
 
   // Match /api/events/:id
-  const idMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
+  const eventIdMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
 
   // PUT /api/events/:id – update
-  if (idMatch && request.method === 'PUT') {
-    const id = idMatch[1];
+  if (eventIdMatch && request.method === 'PUT') {
+    const id = eventIdMatch[1];
     let body;
     try { body = await request.json(); } catch {
       return jsonResponse({ error: 'Invalid JSON' }, 400);
@@ -164,14 +203,64 @@ async function handleApi(request, env, url) {
   }
 
   // DELETE /api/events/:id
-  if (idMatch && request.method === 'DELETE') {
-    const id = idMatch[1];
+  if (eventIdMatch && request.method === 'DELETE') {
+    const id = eventIdMatch[1];
     const events = await getEvents(env);
     const filtered = events.filter(e => e.id !== id);
     if (filtered.length === events.length) {
       return jsonResponse({ error: 'Not found' }, 404);
     }
     await saveEvents(env, filtered);
+    return jsonResponse({ ok: true });
+  }
+
+  // POST /api/board – create board member
+  if (url.pathname === '/api/board' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    if (!body.name || !body.role) {
+      return jsonResponse({ error: 'name and role are required' }, 400);
+    }
+    const members = await getBoard(env);
+    const member = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...sanitizeMember(body),
+    };
+    members.push(member);
+    await saveBoard(env, members);
+    return jsonResponse(member, 201);
+  }
+
+  // Match /api/board/:id
+  const boardIdMatch = url.pathname.match(/^\/api\/board\/([^/]+)$/);
+
+  // PUT /api/board/:id – update
+  if (boardIdMatch && request.method === 'PUT') {
+    const id = boardIdMatch[1];
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    const members = await getBoard(env);
+    const idx = members.findIndex(m => m.id === id);
+    if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
+    members[idx] = { ...members[idx], ...sanitizeMember(body, members[idx]) };
+    await saveBoard(env, members);
+    return jsonResponse(members[idx]);
+  }
+
+  // DELETE /api/board/:id
+  if (boardIdMatch && request.method === 'DELETE') {
+    const id = boardIdMatch[1];
+    const members = await getBoard(env);
+    const filtered = members.filter(m => m.id !== id);
+    if (filtered.length === members.length) {
+      return jsonResponse({ error: 'Not found' }, 404);
+    }
+    await saveBoard(env, filtered);
     return jsonResponse({ ok: true });
   }
 
