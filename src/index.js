@@ -34,12 +34,20 @@ const SEED_EVENTS = [
   },
 ];
 
+// Routes that map to index.html (single-page app with clean URLs)
+const PAGE_ROUTES = new Set(['/mission', '/what-we-do', '/who-we-are', '/events', '/about']);
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/')) {
       return handleApi(request, env, url);
+    }
+
+    // Serve index.html for known page routes (clean URLs)
+    if (PAGE_ROUTES.has(url.pathname)) {
+      return env.ASSETS.fetch(new Request(new URL('/', request.url), request));
     }
 
     // Serve static assets (index.html, admin.html, images, etc.)
