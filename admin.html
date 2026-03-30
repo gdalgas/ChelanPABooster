@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin · Chelan PA Booster</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:      #094F37;
+      --forest-dark: #051F16;
+      --forest-deep: #030F0A;
+      --forest-mid:  #0C3D28;
+      --forest-lite: #135C3D;
+      --forest-pale: #1E7A51;
+      --gold:        #E1E1E1;
+      --gold-dim:    #9A9A9A;
+      --cream:       #F4EFE4;
+      --warm-white:  #FDFAF3;
+      --muted:       #7AAD8F;
+      --muted-dark:  #3D6E53;
+      --danger:      #c0392b;
+      --danger-dark: #922b21;
+      --serif:       'Playfair Display', Georgia, serif;
+      --sans:        'Nunito Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--forest-dark);
+      color: var(--cream);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN ──────────────────────────────────────────────── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .login-card {
+      background: var(--forest-mid);
+      border: 1px solid rgba(225,225,225,.1);
+      border-radius: 6px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .login-logo {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: .3rem;
+    }
+    .login-sub {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+    .login-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--warm-white);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── FORM FIELDS ────────────────────────────────────────── */
+    .field {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .field label {
+      display: block;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .4rem;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(225,225,225,.15);
+      border-radius: 4px;
+      padding: .65rem .9rem;
+      font-family: var(--sans);
+      font-size: .9rem;
+      color: var(--cream);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--muted);
+    }
+    .field input::placeholder, .field textarea::placeholder {
+      color: var(--muted-dark);
+    }
+    .field select option { background: var(--forest-deep); }
+
+    /* ── BUTTONS ────────────────────────────────────────────── */
+    .btn {
+      display: inline-block;
+      font-family: var(--sans);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 4px;
+      border: none;
+      padding: .65rem 1.4rem;
+      transition: background .2s, color .2s, opacity .2s;
+    }
+    .btn:disabled { opacity: .5; cursor: default; }
+
+    .btn-primary {
+      background: var(--forest-pale);
+      color: var(--warm-white);
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--muted); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid rgba(225,225,225,.3);
+    }
+    .btn-outline:hover:not(:disabled) { background: rgba(225,225,225,.08); border-color: var(--gold); }
+
+    .btn-danger {
+      background: transparent;
+      color: #e74c3c;
+      border: 1px solid rgba(231,76,60,.35);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(231,76,60,.12); border-color: #e74c3c; }
+
+    .btn-sm { padding: .4rem .85rem; font-size: .65rem; }
+
+    /* ── ALERTS ─────────────────────────────────────────────── */
+    .alert {
+      font-size: .82rem;
+      padding: .6rem .9rem;
+      border-radius: 4px;
+      margin-top: .8rem;
+    }
+    .alert-error { background: rgba(192,57,43,.2); border: 1px solid rgba(192,57,43,.4); color: #f1948a; }
+    .alert-success { background: rgba(30,122,81,.25); border: 1px solid rgba(30,122,81,.5); color: var(--muted); }
+
+    /* ── ADMIN LAYOUT ───────────────────────────────────────── */
+    #admin-app { display: none; }
+
+    .admin-header {
+      background: var(--forest-deep);
+      border-bottom: 1px solid rgba(225,225,225,.1);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .admin-brand {
+      font-family: var(--serif);
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    .admin-brand span {
+      font-family: var(--sans);
+      font-size: .65rem;
+      font-weight: 400;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-left: .6rem;
+    }
+
+    .admin-main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    /* ── SECTION CARD ───────────────────────────────────────── */
+    .card {
+      background: var(--forest-mid);
+      border: 1px solid rgba(225,225,225,.08);
+      border-radius: 6px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .card-title {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--warm-white);
+      margin-bottom: 1.5rem;
+    }
+    .card-title em { font-style: italic; color: var(--muted); }
+
+    /* ── EVENT FORM ─────────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 1.2rem;
+    }
+    .form-grid .field-full { grid-column: 1 / -1; }
+    .form-actions {
+      display: flex;
+      gap: .8rem;
+      margin-top: 1.2rem;
+      align-items: center;
+    }
+    .form-msg { font-size: .82rem; }
+
+    /* ── EVENTS TABLE ───────────────────────────────────────── */
+    .section-divider {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted-dark);
+      margin: 1.5rem 0 .8rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(225,225,225,.08);
+    }
+
+    .event-row {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 1.5rem;
+      align-items: center;
+      background: rgba(0,0,0,.15);
+      border: 1px solid rgba(225,225,225,.07);
+      border-radius: 4px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 6px;
+      transition: background .2s;
+    }
+    .event-row:hover { background: rgba(0,0,0,.25); }
+    .event-row.past-event { opacity: .65; }
+    .event-row.past-event:hover { opacity: 1; }
+
+    .event-row-date {
+      text-align: center;
+      border-right: 1px solid rgba(225,225,225,.12);
+      padding-right: 1.5rem;
+    }
+    .event-row-month {
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .event-row-day {
+      font-family: var(--serif);
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--warm-white);
+      line-height: 1;
+    }
+    .event-row-name {
+      font-family: var(--serif);
+      font-size: 1rem;
+      color: var(--warm-white);
+    }
+    .event-row-meta {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: .15rem;
+    }
+    .event-row-actions {
+      display: flex;
+      gap: .5rem;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted-dark);
+      font-size: .85rem;
+      padding: 2rem 1rem;
+    }
+
+    /* ── CONFIRM MODAL ──────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3,15,10,.8);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--forest-mid);
+      border: 1px solid rgba(225,225,225,.12);
+      border-radius: 6px;
+      padding: 2rem;
+      max-width: 380px;
+      width: 100%;
+    }
+    .modal-title {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      color: var(--warm-white);
+      margin-bottom: .6rem;
+    }
+    .modal-body { font-size: .88rem; color: var(--gold-dim); margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: .7rem; justify-content: flex-end; }
+
+    @media (max-width: 560px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .field-full { grid-column: 1; }
+      .event-row { grid-template-columns: 55px 1fr; }
+      .event-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
+      .admin-main { padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ──────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Chelan PA Booster</div>
+    <div class="login-sub">Admin Portal</div>
+    <h1 class="login-title">Sign In</h1>
+    <form id="login-form">
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+      <div id="login-error" class="alert alert-error" style="display:none"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ─────────────────────────────────────────────────────────── -->
+<div id="admin-app">
+  <header class="admin-header">
+    <div>
+      <span class="admin-brand">Chelan PA Booster <span>Events Manager</span></span>
+    </div>
+    <button id="logout-btn" class="btn btn-outline btn-sm">Log Out</button>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- Add / Edit Event Form -->
+    <div class="card" id="form-card">
+      <h2 class="card-title" id="form-card-title">Add <em>New Event</em></h2>
+      <form id="event-form" novalidate>
+        <input type="hidden" id="edit-id" value="" />
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="f-name">Event Name *</label>
+            <input type="text" id="f-name" placeholder="e.g. Night of Jazz" required />
+          </div>
+          <div class="field">
+            <label for="f-type">Type / Category</label>
+            <input type="text" id="f-type" placeholder="e.g. Fundraiser, Concert, Audition" />
+          </div>
+          <div class="field">
+            <label for="f-date">Date *</label>
+            <input type="date" id="f-date" required />
+          </div>
+          <div class="field">
+            <label for="f-time">Time</label>
+            <input type="text" id="f-time" placeholder="e.g. 6:00 – 8:00 PM" />
+          </div>
+          <div class="field field-full">
+            <label for="f-location">Location</label>
+            <input type="text" id="f-location" placeholder="e.g. 215 Webster Ave, Chelan, WA" />
+          </div>
+          <div class="field field-full">
+            <label for="f-url">Link URL</label>
+            <input type="url" id="f-url" placeholder="https://www.zeffy.com/..." />
+          </div>
+          <div class="field">
+            <label for="f-url-label">Button Label</label>
+            <input type="text" id="f-url-label" placeholder="View Details" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="form-submit-btn" class="btn btn-primary">Add Event</button>
+          <button type="button" id="form-cancel-btn" class="btn btn-outline" style="display:none">Cancel</button>
+          <span id="form-msg" class="form-msg"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Events List -->
+    <div class="card">
+      <h2 class="card-title">All <em>Events</em></h2>
+      <div id="events-loading" style="text-align:center;padding:2rem;color:var(--muted-dark);font-size:.88rem;">Loading…</div>
+      <div id="events-list" style="display:none">
+        <div class="section-divider">Upcoming</div>
+        <div id="upcoming-list"></div>
+        <div class="section-divider" style="margin-top:1.5rem;">Past</div>
+        <div id="past-list"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h2 class="modal-title">Delete Event?</h2>
+    <p class="modal-body" id="delete-modal-body">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" id="delete-cancel-btn">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="delete-confirm-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let token = sessionStorage.getItem('admin_token') || '';
+  let allEvents = [];
+  let pendingDeleteId = null;
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const loginScreen  = document.getElementById('login-screen');
+  const adminApp     = document.getElementById('admin-app');
+  const loginForm    = document.getElementById('login-form');
+  const loginError   = document.getElementById('login-error');
+  const logoutBtn    = document.getElementById('logout-btn');
+  const eventForm    = document.getElementById('event-form');
+  const formCardTitle= document.getElementById('form-card-title');
+  const formSubmit   = document.getElementById('form-submit-btn');
+  const formCancel   = document.getElementById('form-cancel-btn');
+  const formMsg      = document.getElementById('form-msg');
+  const editIdField  = document.getElementById('edit-id');
+  const eventsLoading= document.getElementById('events-loading');
+  const eventsList   = document.getElementById('events-list');
+  const upcomingList = document.getElementById('upcoming-list');
+  const pastList     = document.getElementById('past-list');
+  const deleteModal  = document.getElementById('delete-modal');
+  const deleteBody   = document.getElementById('delete-modal-body');
+  const deleteCancelBtn  = document.getElementById('delete-cancel-btn');
+  const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  if (token) {
+    showApp();
+    loadEvents();
+  }
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('password').value;
+    loginError.style.display = 'none';
+    const btn = loginForm.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        token = password;
+        sessionStorage.setItem('admin_token', token);
+        showApp();
+        loadEvents();
+      } else {
+        showLoginError(data.error || 'Sign in failed');
+      }
+    } catch {
+      showLoginError('Network error. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  });
+
+  function showLoginError(msg) {
+    loginError.textContent = msg;
+    loginError.style.display = 'block';
+  }
+
+  // ── Auth helpers ─────────────────────────────────────────────────────────
+  function showApp() {
+    loginScreen.style.display = 'none';
+    adminApp.style.display = 'block';
+  }
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('admin_token');
+    token = '';
+    location.reload();
+  });
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  // ── Load Events ──────────────────────────────────────────────────────────
+  async function loadEvents() {
+    eventsLoading.style.display = 'block';
+    eventsList.style.display = 'none';
+    try {
+      const res = await fetch('/api/events');
+      if (!res.ok) throw new Error('Failed to load');
+      allEvents = await res.json();
+      renderEvents();
+    } catch {
+      eventsLoading.textContent = 'Failed to load events.';
+    }
+  }
+
+  function renderEvents() {
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = allEvents
+      .filter(e => e.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const past = allEvents
+      .filter(e => e.date < today)
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    upcomingList.innerHTML = upcoming.length
+      ? upcoming.map(eventRowHTML).join('')
+      : '<div class="empty-state">No upcoming events.</div>';
+    pastList.innerHTML = past.length
+      ? past.map(e => eventRowHTML(e, true)).join('')
+      : '<div class="empty-state">No past events.</div>';
+
+    eventsLoading.style.display = 'none';
+    eventsList.style.display = 'block';
+  }
+
+  function eventRowHTML(event, isPast = false) {
+    const [year, monthIdx, day] = event.date.split('-');
+    const month = MONTHS[parseInt(monthIdx, 10) - 1] || '';
+    const meta = [event.time, event.location].filter(Boolean).join(' · ');
+    const typeYear = [event.type, year].filter(Boolean).join(' · ');
+    return `
+      <div class="event-row${isPast ? ' past-event' : ''}">
+        <div class="event-row-date">
+          <div class="event-row-month">${month}</div>
+          <div class="event-row-day">${parseInt(day, 10)}</div>
+        </div>
+        <div>
+          ${typeYear ? `<div style="font-size:.65rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.2rem;">${escHtml(typeYear)}</div>` : ''}
+          <div class="event-row-name">${escHtml(event.name)}</div>
+          ${meta ? `<div class="event-row-meta">${escHtml(meta)}</div>` : ''}
+        </div>
+        <div class="event-row-actions">
+          <button class="btn btn-outline btn-sm" onclick="startEdit('${event.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete('${event.id}', '${escAttr(event.name)}')">Delete</button>
+        </div>
+      </div>`;
+  }
+
+  // ── Add / Edit Form ──────────────────────────────────────────────────────
+  eventForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = editIdField.value;
+    const payload = {
+      name:     document.getElementById('f-name').value.trim(),
+      type:     document.getElementById('f-type').value.trim(),
+      date:     document.getElementById('f-date').value,
+      time:     document.getElementById('f-time').value.trim(),
+      location: document.getElementById('f-location').value.trim(),
+      url:      document.getElementById('f-url').value.trim(),
+      urlLabel: document.getElementById('f-url-label').value.trim() || 'View Details',
+    };
+    if (!payload.name || !payload.date) {
+      setFormMsg('Event name and date are required.', 'error');
+      return;
+    }
+    formSubmit.disabled = true;
+    setFormMsg('');
+    try {
+      const res = await fetch(id ? `/api/events/${id}` : '/api/events', {
+        method: id ? 'PUT' : 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) { handleUnauthorized(); return; }
+      if (!res.ok) throw new Error('Save failed');
+      setFormMsg(id ? 'Event updated.' : 'Event added.', 'success');
+      resetForm();
+      await loadEvents();
+    } catch {
+      setFormMsg('Save failed. Please try again.', 'error');
+    } finally {
+      formSubmit.disabled = false;
+    }
+  });
+
+  formCancel.addEventListener('click', resetForm);
+
+  function startEdit(id) {
+    const event = allEvents.find(e => e.id === id);
+    if (!event) return;
+    editIdField.value = id;
+    document.getElementById('f-name').value     = event.name || '';
+    document.getElementById('f-type').value     = event.type || '';
+    document.getElementById('f-date').value     = event.date || '';
+    document.getElementById('f-time').value     = event.time || '';
+    document.getElementById('f-location').value = event.location || '';
+    document.getElementById('f-url').value      = event.url || '';
+    document.getElementById('f-url-label').value= event.urlLabel || 'View Details';
+    formCardTitle.innerHTML = 'Edit <em>Event</em>';
+    formSubmit.textContent = 'Save Changes';
+    formCancel.style.display = 'inline-block';
+    setFormMsg('');
+    document.getElementById('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetForm() {
+    editIdField.value = '';
+    eventForm.reset();
+    formCardTitle.innerHTML = 'Add <em>New Event</em>';
+    formSubmit.textContent = 'Add Event';
+    formCancel.style.display = 'none';
+    setFormMsg('');
+  }
+
+  function setFormMsg(msg, type = '') {
+    if (!msg) { formMsg.textContent = ''; formMsg.className = 'form-msg'; return; }
+    formMsg.textContent = msg;
+    formMsg.className = `form-msg alert alert-${type}`;
+  }
+
+  // ── Delete Modal ─────────────────────────────────────────────────────────
+  function confirmDelete(id, name) {
+    pendingDeleteId = id;
+    deleteBody.textContent = `Delete "${name}"? This cannot be undone.`;
+    deleteModal.classList.add('open');
+  }
+
+  deleteCancelBtn.addEventListener('click', () => {
+    deleteModal.classList.remove('open');
+    pendingDeleteId = null;
+  });
+
+  deleteConfirmBtn.addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    deleteConfirmBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/events/${pendingDeleteId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (res.status === 401) { handleUnauthorized(); return; }
+      deleteModal.classList.remove('open');
+      pendingDeleteId = null;
+      if (editIdField.value === pendingDeleteId) resetForm();
+      await loadEvents();
+    } catch {
+      deleteModal.classList.remove('open');
+    } finally {
+      deleteConfirmBtn.disabled = false;
+    }
+  });
+
+  // Close modal on overlay click
+  deleteModal.addEventListener('click', (e) => {
+    if (e.target === deleteModal) {
+      deleteModal.classList.remove('open');
+      pendingDeleteId = null;
+    }
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function escAttr(str) {
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  function handleUnauthorized() {
+    sessionStorage.removeItem('admin_token');
+    location.reload();
+  }
+</script>
+</body>
+</html>
