@@ -1047,10 +1047,16 @@
       navLinks.classList.toggle('open');
     });
     navLinks.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => {
+      a.addEventListener('click', (e) => {
         hamburger.classList.remove('open');
         navLinks.classList.remove('open');
-      });
+        // Intercept internal page-section links — no full reload
+        const sectionId = PATH_TO_SECTION[new URL(a.href).pathname];
+        if (sectionId) {
+          e.preventDefault();
+          history.pushState(null, '', a.href);
+          scrollToSection(sectionId);
+        }
     });
 
     const reveals = document.querySelectorAll('.reveal');
@@ -1196,12 +1202,19 @@
         });
     })();
 
-    // Scroll only after both dynamic sections have rendered
+    // On initial load: scroll after dynamic content has rendered
     if (pendingScrollId) {
       Promise.allSettled([eventsReady, boardReady]).then(() => {
         scrollToSection(pendingScrollId);
       });
     }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', () => {
+      const id = PATH_TO_SECTION[window.location.pathname];
+      if (id) scrollToSection(id);
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   </script>
 </body>
 </html>
