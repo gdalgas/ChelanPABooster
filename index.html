@@ -663,8 +663,46 @@
       .event-item { grid-template-columns: 70px 1fr; }
       .event-action { display: none; }
     }
+    /* ── HAMBURGER ───────────────────────────────────────── */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 18px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      z-index: 101;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--cream);
+      border-radius: 2px;
+      transition: transform .3s, opacity .3s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
     @media (max-width: 640px) {
-      nav .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+      nav .nav-links {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(3,15,10,.97);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2.5rem;
+        z-index: 100;
+      }
+      nav .nav-links.open { display: flex; }
+      nav .nav-links a { font-size: 1.1rem; opacity: .85; }
       .hero { padding: 6rem 1.5rem 4rem; }
       section { padding: 5rem 1.5rem; }
       .pillars { grid-template-columns: 1fr; }
@@ -698,7 +736,10 @@
         <span>Performing Arts · Chelan, WA</span>
       </div>
     </a>
-    <ul class="nav-links">
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
       <li><a href="#mission">Mission</a></li>
       <li><a href="#what-we-do">What We Do</a></li>
       <li><a href="#events">Events</a></li>
@@ -911,6 +952,19 @@
     window.addEventListener('scroll', () => {
       nav.classList.toggle('scrolled', window.scrollY > 60);
     }, { passive: true });
+
+    const hamburger = document.getElementById('nav-hamburger');
+    const navLinks = document.getElementById('nav-links');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      navLinks.classList.toggle('open');
+    });
+    navLinks.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        hamburger.classList.remove('open');
+        navLinks.classList.remove('open');
+      });
+    });
 
     const reveals = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver((entries) => {
