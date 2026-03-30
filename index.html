@@ -204,18 +204,23 @@
       position: absolute;
       top: -5%;
       left: 50%;
-      transform: translateX(-50%);
       width: 500px;
       height: 850px;
       background: conic-gradient(from -10deg at 50% 0%, transparent 0%, rgba(225,225,225,.03) 30%, rgba(225,225,225,.07) 50%, rgba(225,225,225,.03) 70%, transparent 100%);
       clip-path: polygon(35% 0%, 65% 0%, 88% 100%, 12% 100%);
       pointer-events: none;
       z-index: 0;
-      animation: spotlight-pulse 6s ease-in-out infinite;
+      transform-origin: 50% 0%;
+      animation: spotlight-move 18s ease-in-out infinite;
     }
-    @keyframes spotlight-pulse {
-      0%, 100% { opacity: .6; }
-      50%       { opacity: 1; }
+    @keyframes spotlight-move {
+      0%   { transform: translateX(-50%) rotate(-10deg); opacity: .6; }
+      20%  { opacity: 1; }
+      35%  { transform: translateX(-50%) rotate(8deg);  opacity: .75; }
+      50%  { transform: translateX(-50%) rotate(-4deg); opacity: 1; }
+      65%  { transform: translateX(-50%) rotate(12deg); opacity: .65; }
+      80%  { opacity: .9; }
+      100% { transform: translateX(-50%) rotate(-10deg); opacity: .6; }
     }
 
     .hero-content {
