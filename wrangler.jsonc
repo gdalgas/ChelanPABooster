@@ -8,7 +8,7 @@
 	},
 	"assets": {
 		// Static files served by the Worker via env.ASSETS.fetch()
-		"directory": ".",
+		"directory": "./public",
 		"binding": "ASSETS"
 	},
 	"kv_namespaces": [

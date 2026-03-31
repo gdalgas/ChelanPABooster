@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin · Chelan PA Booster</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ──────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Chelan PA Booster</div>
+    <div class="login-sub">Admin Portal</div>
+    <h1 class="login-title">Sign In</h1>
+    <form id="login-form">
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+      <div id="login-error" class="alert alert-error" style="display:none"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ─────────────────────────────────────────────────────────── -->
+<div id="admin-app">
+  <header class="admin-header">
+    <div>
+      <span class="admin-brand">Chelan PA Booster <span>Admin</span></span>
+    </div>
+    <button id="logout-btn" class="btn btn-outline btn-sm">Log Out</button>
+  </header>
+
+  <nav class="admin-tabs">
+    <button class="tab-btn active" data-tab="events-panel">Events</button>
+    <button class="tab-btn" data-tab="board-panel">Board Members</button>
+  </nav>
+
+  <main class="admin-main">
+
+    <!-- ── EVENTS PANEL ── -->
+    <div id="events-panel" class="tab-panel active">
+
+      <!-- Add / Edit Event Form -->
+      <div class="card" id="form-card">
+        <h2 class="card-title" id="form-card-title">Add <em>New Event</em></h2>
+        <form id="event-form" novalidate>
+          <input type="hidden" id="edit-id" value="" />
+          <div class="form-grid">
+            <div class="field field-full">
+              <label for="f-name">Event Name *</label>
+              <input type="text" id="f-name" placeholder="e.g. Night of Jazz" required />
+            </div>
+            <div class="field">
+              <label for="f-type">Type / Category</label>
+              <input type="text" id="f-type" placeholder="e.g. Fundraiser, Concert, Audition" />
+            </div>
+            <div class="field">
+              <label for="f-date">Date *</label>
+              <input type="date" id="f-date" required />
+            </div>
+            <div class="field">
+              <label for="f-time">Time</label>
+              <input type="text" id="f-time" placeholder="e.g. 6:00 – 8:00 PM" />
+            </div>
+            <div class="field field-full">
+              <label for="f-location">Location</label>
+              <input type="text" id="f-location" placeholder="e.g. 215 Webster Ave, Chelan, WA" />
+            </div>
+            <div class="field field-full">
+              <label for="f-url">Link URL</label>
+              <input type="url" id="f-url" placeholder="https://www.zeffy.com/..." />
+            </div>
+            <div class="field">
+              <label for="f-url-label">Button Label</label>
+              <input type="text" id="f-url-label" placeholder="View Details" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="form-submit-btn" class="btn btn-primary">Add Event</button>
+            <button type="button" id="form-cancel-btn" class="btn btn-outline" style="display:none">Cancel</button>
+            <span id="form-msg" class="form-msg"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Events List -->
+      <div class="card">
+        <h2 class="card-title">All <em>Events</em></h2>
+        <div id="events-loading" style="text-align:center;padding:2rem;color:var(--muted-dark);font-size:.88rem;">Loading…</div>
+        <div id="events-list" style="display:none">
+          <div class="section-divider">Upcoming</div>
+          <div id="upcoming-list"></div>
+          <div class="section-divider" style="margin-top:1.5rem;">Past</div>
+          <div id="past-list"></div>
+        </div>
+      </div>
+
+    </div><!-- /events-panel -->
+
+    <!-- ── BOARD PANEL ── -->
+    <div id="board-panel" class="tab-panel">
+
+      <!-- Add / Edit Board Member Form -->
+      <div class="card" id="board-form-card">
+        <h2 class="card-title" id="board-form-title">Add <em>Board Member</em></h2>
+        <form id="board-form" novalidate>
+          <input type="hidden" id="b-edit-id" value="" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="b-name">Name *</label>
+              <input type="text" id="b-name" placeholder="e.g. Jane Smith" required />
+            </div>
+            <div class="field">
+              <label for="b-role">Role *</label>
+              <input type="text" id="b-role" placeholder="e.g. President" required />
+            </div>
+            <div class="field field-full">
+              <label for="b-bio">Bio / Description</label>
+              <textarea id="b-bio" rows="3" placeholder="A short bio or description…"></textarea>
+            </div>
+            <div class="field">
+              <label for="b-order">Display Order</label>
+              <input type="number" id="b-order" placeholder="0" min="0" />
+            </div>
+            <div class="field">
+              <label for="b-image">Headshot Photo</label>
+              <input type="file" id="b-image" accept="image/*" />
+              <div class="image-preview-wrap">
+                <img id="b-image-preview" class="image-preview" src="" alt="Preview" />
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="board-submit-btn" class="btn btn-primary">Add Member</button>
+            <button type="button" id="board-cancel-btn" class="btn btn-outline" style="display:none">Cancel</button>
+            <span id="board-form-msg" class="form-msg"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Board Members List -->
+      <div class="card">
+        <h2 class="card-title">All <em>Board Members</em></h2>
+        <div id="board-loading" style="text-align:center;padding:2rem;color:var(--muted-dark);font-size:.88rem;">Loading…</div>
+        <div id="board-list" style="display:none"></div>
+      </div>
+
+    </div><!-- /board-panel -->
+
+  </main>
+</div>
+
+<!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h2 class="modal-title" id="delete-modal-title">Delete Event?</h2>
+    <p class="modal-body" id="delete-modal-body">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" id="delete-cancel-btn">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="delete-confirm-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/utils.js"></script>
+<script src="/js/admin/auth.js"></script>
+<script src="/js/admin/tabs.js"></script>
+<script src="/js/admin/events.js"></script>
+<script src="/js/admin/board.js"></script>
+<script src="/js/admin/modal.js"></script>
+<script>
+  // Auto-login if token is already stored
+  if (token) {
+    showApp();
+    loadEvents();
+    loadBoard();
+  }
+</script>
+</body>
+</html>
