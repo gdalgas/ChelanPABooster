@@ -15,7 +15,7 @@ hamburger.addEventListener('click', () => {
 
 // ── Anchor scroll (deferred for sections below dynamic content) ───────────────
 // Sections whose position shifts when dynamic content (events) loads above them
-const DYNAMIC_ANCHORS = new Set(['#events', '#board', '#about']);
+const DYNAMIC_ANCHORS = new Set(['#events', '#board', '#gallery', '#about']);
 
 function scrollToAnchor(hash) {
   const el = document.querySelector(hash);
@@ -36,7 +36,7 @@ navLinks.querySelectorAll('a').forEach(a => {
     e.preventDefault();
     history.pushState(null, '', href);
     // Wait for dynamic sections to finish rendering before scrolling
-    Promise.allSettled([window._eventsReady, window._boardReady]).then(() => {
+    Promise.allSettled([window._eventsReady, window._boardReady, window._galleryReady]).then(() => {
       scrollToAnchor(href);
     });
   });

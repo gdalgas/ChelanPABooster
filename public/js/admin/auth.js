@@ -40,6 +40,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       showApp();
       loadEvents();
       loadBoard();
+      loadGallery();
     } else {
       loginError.textContent = data.error || 'Sign in failed';
       loginError.style.display = 'block';

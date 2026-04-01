@@ -4,6 +4,7 @@
  * Routes:
  *   GET  /api/events            – public list of all events
  *   GET  /api/board             – public list of board members
+ *   GET  /api/gallery           – public list of gallery photos
  *   POST /api/admin/login       – validate admin password
  *   POST /api/events            – create event  (requires auth)
  *   PUT  /api/events/:id        – update event  (requires auth)
@@ -11,6 +12,9 @@
  *   POST /api/board             – create board member  (requires auth)
  *   PUT  /api/board/:id         – update board member  (requires auth)
  *   DELETE /api/board/:id       – delete board member  (requires auth)
+ *   POST /api/gallery           – upload photo  (requires auth)
+ *   PUT  /api/gallery/:id       – update caption/order  (requires auth)
+ *   DELETE /api/gallery/:id     – delete photo  (requires auth)
  *   *                           – serve static assets
  *
  * Required environment:
@@ -125,6 +129,27 @@ function sanitizeMember(body, existing = {}) {
   };
 }
 
+// ── Gallery ───────────────────────────────────────────────────────────────────
+
+async function getGallery(env) {
+  const raw = await env.EVENTS_KV.get('gallery');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+async function saveGallery(env, photos) {
+  await env.EVENTS_KV.put('gallery', JSON.stringify(photos));
+}
+
+function sanitizePhoto(body, existing = {}) {
+  return {
+    ...existing,
+    caption: String(body.caption ?? existing.caption ?? '').trim(),
+    image:   String(body.image   ?? existing.image   ?? '').trim(),
+    order:   Number.isFinite(Number(body.order)) ? Number(body.order) : (existing.order ?? 0),
+  };
+}
+
 // ── API Router ────────────────────────────────────────────────────────────────
 
 async function handleApi(request, env, url) {
@@ -142,6 +167,12 @@ async function handleApi(request, env, url) {
   if (url.pathname === '/api/board' && request.method === 'GET') {
     const members = await getBoard(env);
     return jsonResponse(members);
+  }
+
+  // ── Public: GET /api/gallery ─────────────────────────────
+  if (url.pathname === '/api/gallery' && request.method === 'GET') {
+    const photos = await getGallery(env);
+    return jsonResponse(photos);
   }
 
   // ── Public: POST /api/admin/login ───────────────────────
@@ -261,6 +292,56 @@ async function handleApi(request, env, url) {
       return jsonResponse({ error: 'Not found' }, 404);
     }
     await saveBoard(env, filtered);
+    return jsonResponse({ ok: true });
+  }
+
+  // POST /api/gallery – upload photo
+  if (url.pathname === '/api/gallery' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    if (!body.image) {
+      return jsonResponse({ error: 'image is required' }, 400);
+    }
+    const photos = await getGallery(env);
+    const photo = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...sanitizePhoto(body),
+    };
+    photos.push(photo);
+    await saveGallery(env, photos);
+    return jsonResponse(photo, 201);
+  }
+
+  // Match /api/gallery/:id
+  const galleryIdMatch = url.pathname.match(/^\/api\/gallery\/([^/]+)$/);
+
+  // PUT /api/gallery/:id – update caption/order
+  if (galleryIdMatch && request.method === 'PUT') {
+    const id = galleryIdMatch[1];
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    const photos = await getGallery(env);
+    const idx = photos.findIndex(p => p.id === id);
+    if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
+    photos[idx] = { ...photos[idx], ...sanitizePhoto(body, photos[idx]) };
+    await saveGallery(env, photos);
+    return jsonResponse(photos[idx]);
+  }
+
+  // DELETE /api/gallery/:id
+  if (galleryIdMatch && request.method === 'DELETE') {
+    const id = galleryIdMatch[1];
+    const photos = await getGallery(env);
+    const filtered = photos.filter(p => p.id !== id);
+    if (filtered.length === photos.length) {
+      return jsonResponse({ error: 'Not found' }, 404);
+    }
+    await saveGallery(env, filtered);
     return jsonResponse({ ok: true });
   }
 

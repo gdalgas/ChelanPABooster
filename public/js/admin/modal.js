@@ -1,7 +1,8 @@
 // ── Delete confirm modal ──────────────────────────────────────────────────────
 // Requires: auth.js (authHeaders, handleUnauthorized)
-// Requires: events.js (allEvents, loadEvents, editIdField, resetForm)
-// Requires: board.js  (allMembers, loadBoard, boardEditId, resetBoardForm)
+// Requires: events.js  (loadEvents, editIdField, resetForm)
+// Requires: board.js   (loadBoard, boardEditId, resetBoardForm)
+// Requires: gallery.js (loadGallery)
 
 let pendingDeleteId   = null;
 let pendingDeleteType = null; // 'event' | 'member'
@@ -28,12 +29,22 @@ function confirmDeleteMember(id, name) {
   deleteModal.classList.add('open');
 }
 
+function confirmDeletePhoto(id, name) {
+  pendingDeleteId   = id;
+  pendingDeleteType = 'photo';
+  deleteModalTitle.textContent = 'Delete Photo?';
+  deleteBody.textContent       = `Delete "${name}"? This cannot be undone.`;
+  deleteModal.classList.add('open');
+}
+
 deleteConfirmBtn.addEventListener('click', async () => {
   if (!pendingDeleteId) return;
   deleteConfirmBtn.disabled = true;
   const endpoint = pendingDeleteType === 'member'
     ? `/api/board/${pendingDeleteId}`
-    : `/api/events/${pendingDeleteId}`;
+    : pendingDeleteType === 'photo'
+      ? `/api/gallery/${pendingDeleteId}`
+      : `/api/events/${pendingDeleteId}`;
   try {
     const res = await fetch(endpoint, { method: 'DELETE', headers: authHeaders() });
     if (res.status === 401) { handleUnauthorized(); return; }
@@ -41,6 +52,8 @@ deleteConfirmBtn.addEventListener('click', async () => {
     if (pendingDeleteType === 'member') {
       if (boardEditId.value === pendingDeleteId) resetBoardForm();
       await loadBoard();
+    } else if (pendingDeleteType === 'photo') {
+      await loadGallery();
     } else {
       if (editIdField.value === pendingDeleteId) resetForm();
       await loadEvents();
