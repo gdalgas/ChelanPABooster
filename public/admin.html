@@ -43,6 +43,7 @@
     <button class="tab-btn active" data-tab="events-panel">Events</button>
     <button class="tab-btn" data-tab="board-panel">Board Members</button>
     <button class="tab-btn" data-tab="gallery-panel">Gallery</button>
+    <button class="tab-btn" data-tab="sponsors-panel">Sponsors</button>
   </nav>
 
   <main class="admin-main">
@@ -197,6 +198,68 @@
 
     </div><!-- /gallery-panel -->
 
+    <!-- ── SPONSORS PANEL ── -->
+    <div id="sponsors-panel" class="tab-panel">
+
+      <!-- Banner visibility toggle -->
+      <div class="card">
+        <h2 class="card-title">Banner <em>Visibility</em></h2>
+        <div style="display:flex;align-items:center;gap:1.2rem;margin-top:.5rem;">
+          <label class="toggle-label" for="sponsors-visible-toggle">
+            Show sponsor ticker on the public site
+          </label>
+          <button id="sponsors-visible-toggle" class="btn btn-outline btn-sm" data-visible="true">
+            Visible
+          </button>
+        </div>
+        <span id="sponsors-settings-msg" class="form-msg" style="margin-top:.75rem;display:block;"></span>
+      </div>
+
+      <!-- Add Sponsor Form -->
+      <div class="card">
+        <h2 class="card-title" id="sponsor-form-title">Add <em>Sponsor</em></h2>
+        <form id="sponsor-form" novalidate>
+          <input type="hidden" id="sp-edit-id" value="" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="sp-name">Sponsor Name *</label>
+              <input type="text" id="sp-name" placeholder="e.g. Chinook Music" required />
+            </div>
+            <div class="field">
+              <label for="sp-url">Website URL (optional)</label>
+              <input type="url" id="sp-url" placeholder="https://…" />
+            </div>
+            <div class="field">
+              <label for="sp-level">Sponsorship Tier *</label>
+              <select id="sp-level">
+                <option value="patron">Patron – $25 &nbsp;(Individual / Alumni)</option>
+                <option value="artist">Artist – $50 &nbsp;(Local Families)</option>
+                <option value="spotlight">Spotlight – $100 &nbsp;(Community Leaders / Small Businesses)</option>
+                <option value="producer">Producer – $250 &nbsp;(Local Chelan Businesses)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sp-order">Display Order</label>
+              <input type="number" id="sp-order" placeholder="0" min="0" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="sponsor-submit-btn" class="btn btn-primary">Add Sponsor</button>
+            <button type="button" id="sponsor-cancel-btn" class="btn btn-outline" style="display:none">Cancel</button>
+            <span id="sponsor-form-msg" class="form-msg"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sponsors List -->
+      <div class="card">
+        <h2 class="card-title">All <em>Sponsors</em></h2>
+        <div id="sponsors-loading" style="text-align:center;padding:2rem;color:var(--muted-dark);font-size:.88rem;">Loading…</div>
+        <div id="sponsors-list" style="display:none"></div>
+      </div>
+
+    </div><!-- /sponsors-panel -->
+
   </main>
 </div>
 
@@ -218,6 +281,7 @@
 <script src="/js/admin/events.js"></script>
 <script src="/js/admin/board.js"></script>
 <script src="/js/admin/gallery.js"></script>
+<script src="/js/admin/sponsors.js"></script>
 <script src="/js/admin/modal.js"></script>
 <script>
   // Auto-login if token is already stored
@@ -226,6 +290,7 @@
     loadEvents();
     loadBoard();
     loadGallery();
+    loadSponsors();
   }
 </script>
 </body>

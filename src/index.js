@@ -5,6 +5,7 @@
  *   GET  /api/events            – public list of all events
  *   GET  /api/board             – public list of board members
  *   GET  /api/gallery           – public list of gallery photos
+ *   GET  /api/sponsors          – public sponsors list + visibility flag
  *   POST /api/admin/login       – validate admin password
  *   POST /api/events            – create event  (requires auth)
  *   PUT  /api/events/:id        – update event  (requires auth)
@@ -15,6 +16,10 @@
  *   POST /api/gallery           – upload photo  (requires auth)
  *   PUT  /api/gallery/:id       – update caption/order  (requires auth)
  *   DELETE /api/gallery/:id     – delete photo  (requires auth)
+ *   PUT /api/sponsors/settings  – toggle banner visibility  (requires auth)
+ *   POST /api/sponsors          – create sponsor  (requires auth)
+ *   PUT  /api/sponsors/:id      – update sponsor  (requires auth)
+ *   DELETE /api/sponsors/:id    – delete sponsor  (requires auth)
  *   *                           – serve static assets
  *
  * Required environment:
@@ -150,6 +155,33 @@ function sanitizePhoto(body, existing = {}) {
   };
 }
 
+// ── Sponsors ──────────────────────────────────────────────────────────────────
+
+async function getSponsors(env) {
+  const raw = await env.EVENTS_KV.get('sponsors');
+  if (!raw) return { visible: true, items: [] };
+  try { return JSON.parse(raw); } catch { return { visible: true, items: [] }; }
+}
+
+async function saveSponsors(env, data) {
+  await env.EVENTS_KV.put('sponsors', JSON.stringify(data));
+}
+
+const SPONSOR_LEVELS = ['patron', 'artist', 'spotlight', 'producer'];
+
+function sanitizeSponsor(body, existing = {}) {
+  const level = SPONSOR_LEVELS.includes(body.level) ? body.level
+    : SPONSOR_LEVELS.includes(existing.level) ? existing.level
+    : 'patron';
+  return {
+    ...existing,
+    name:  String(body.name  ?? existing.name  ?? '').trim(),
+    url:   String(body.url   ?? existing.url   ?? '').trim(),
+    level,
+    order: Number.isFinite(Number(body.order)) ? Number(body.order) : (existing.order ?? 0),
+  };
+}
+
 // ── API Router ────────────────────────────────────────────────────────────────
 
 async function handleApi(request, env, url) {
@@ -173,6 +205,11 @@ async function handleApi(request, env, url) {
   if (url.pathname === '/api/gallery' && request.method === 'GET') {
     const photos = await getGallery(env);
     return jsonResponse(photos);
+  }
+
+  // ── Public: GET /api/sponsors ────────────────────────────
+  if (url.pathname === '/api/sponsors' && request.method === 'GET') {
+    return jsonResponse(await getSponsors(env));
   }
 
   // ── Public: POST /api/admin/login ───────────────────────
@@ -342,6 +379,65 @@ async function handleApi(request, env, url) {
       return jsonResponse({ error: 'Not found' }, 404);
     }
     await saveGallery(env, filtered);
+    return jsonResponse({ ok: true });
+  }
+
+  // PUT /api/sponsors/settings – toggle banner visibility
+  if (url.pathname === '/api/sponsors/settings' && request.method === 'PUT') {
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    const data = await getSponsors(env);
+    data.visible = body.visible !== false;
+    await saveSponsors(env, data);
+    return jsonResponse({ ok: true, visible: data.visible });
+  }
+
+  // POST /api/sponsors – create
+  if (url.pathname === '/api/sponsors' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    if (!body.name) return jsonResponse({ error: 'name is required' }, 400);
+    const data = await getSponsors(env);
+    const sponsor = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...sanitizeSponsor(body),
+    };
+    data.items.push(sponsor);
+    await saveSponsors(env, data);
+    return jsonResponse(sponsor, 201);
+  }
+
+  // Match /api/sponsors/:id
+  const sponsorIdMatch = url.pathname.match(/^\/api\/sponsors\/([^/]+)$/);
+
+  // PUT /api/sponsors/:id – update
+  if (sponsorIdMatch && request.method === 'PUT') {
+    const id = sponsorIdMatch[1];
+    let body;
+    try { body = await request.json(); } catch {
+      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    }
+    const data = await getSponsors(env);
+    const idx = data.items.findIndex(s => s.id === id);
+    if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
+    data.items[idx] = { ...data.items[idx], ...sanitizeSponsor(body, data.items[idx]) };
+    await saveSponsors(env, data);
+    return jsonResponse(data.items[idx]);
+  }
+
+  // DELETE /api/sponsors/:id
+  if (sponsorIdMatch && request.method === 'DELETE') {
+    const id = sponsorIdMatch[1];
+    const data = await getSponsors(env);
+    const filtered = data.items.filter(s => s.id !== id);
+    if (filtered.length === data.items.length) return jsonResponse({ error: 'Not found' }, 404);
+    data.items = filtered;
+    await saveSponsors(env, data);
     return jsonResponse({ ok: true });
   }
 

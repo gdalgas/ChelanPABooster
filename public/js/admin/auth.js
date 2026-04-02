@@ -1,6 +1,6 @@
 // ── Auth ──────────────────────────────────────────────────────────────────────
 // Login, logout, token management.
-// Requires: loadEvents and loadBoard to be defined (by events.js and board.js).
+// Requires: loadEvents, loadBoard, loadGallery, loadSponsors to be defined.
 
 let token = sessionStorage.getItem('admin_token') || '';
 
@@ -41,6 +41,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       loadEvents();
       loadBoard();
       loadGallery();
+      loadSponsors();
     } else {
       loginError.textContent = data.error || 'Sign in failed';
       loginError.style.display = 'block';
