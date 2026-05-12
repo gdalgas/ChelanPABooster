@@ -135,15 +135,45 @@ function sanitizeMember(body, existing = {}) {
 }
 
 // ── Gallery ───────────────────────────────────────────────────────────────────
+//
+// Storage layout (avoids the 25 MB per-KV-value limit):
+//   "gallery"      → JSON array of metadata objects: [{id, caption, order, createdAt}]
+//   "gallery:<id>" → JSON object with full image data: {id, caption, order, createdAt, image}
+//
+// The public GET /api/gallery route loads the index then fetches all photos in
+// parallel, so each KV value stays small regardless of gallery size.
 
-async function getGallery(env) {
+async function getGalleryIndex(env) {
   const raw = await env.EVENTS_KV.get('gallery');
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch { return []; }
+  try {
+    const parsed = JSON.parse(raw);
+    // Backwards-compat: old format stored full objects including images in the index.
+    // Strip image data so the index is metadata-only going forward.
+    return parsed.map(({ image: _image, ...meta }) => meta);
+  } catch { return []; }
 }
 
-async function saveGallery(env, photos) {
-  await env.EVENTS_KV.put('gallery', JSON.stringify(photos));
+async function saveGalleryIndex(env, index) {
+  // Index stores only metadata — never image data.
+  const meta = index.map(({ image: _image, ...m }) => m);
+  await env.EVENTS_KV.put('gallery', JSON.stringify(meta));
+}
+
+async function getGallery(env) {
+  const index = await getGalleryIndex(env);
+  if (!index.length) return [];
+  const photos = await Promise.all(
+    index.map(async meta => {
+      const raw = await env.EVENTS_KV.get(`gallery:${meta.id}`);
+      if (raw) {
+        try { return JSON.parse(raw); } catch { return null; }
+      }
+      // Backwards-compat: photo not yet migrated to its own key — return meta only.
+      return meta;
+    })
+  );
+  return photos.filter(Boolean);
 }
 
 function sanitizePhoto(body, existing = {}) {
@@ -341,14 +371,17 @@ async function handleApi(request, env, url) {
     if (!body.image) {
       return jsonResponse({ error: 'image is required' }, 400);
     }
-    const photos = await getGallery(env);
     const photo = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       ...sanitizePhoto(body),
     };
-    photos.push(photo);
-    await saveGallery(env, photos);
+    const index = await getGalleryIndex(env);
+    index.push(photo);
+    await Promise.all([
+      env.EVENTS_KV.put(`gallery:${photo.id}`, JSON.stringify(photo)),
+      saveGalleryIndex(env, index),
+    ]);
     return jsonResponse(photo, 201);
   }
 
@@ -362,23 +395,32 @@ async function handleApi(request, env, url) {
     try { body = await request.json(); } catch {
       return jsonResponse({ error: 'Invalid JSON' }, 400);
     }
-    const photos = await getGallery(env);
-    const idx = photos.findIndex(p => p.id === id);
-    if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
-    photos[idx] = { ...photos[idx], ...sanitizePhoto(body, photos[idx]) };
-    await saveGallery(env, photos);
-    return jsonResponse(photos[idx]);
+    const raw = await env.EVENTS_KV.get(`gallery:${id}`);
+    if (!raw) return jsonResponse({ error: 'Not found' }, 404);
+    const existing = JSON.parse(raw);
+    const updated = { ...existing, ...sanitizePhoto(body, existing) };
+    const index = await getGalleryIndex(env);
+    const idx = index.findIndex(p => p.id === id);
+    if (idx !== -1) index[idx] = updated;
+    await Promise.all([
+      env.EVENTS_KV.put(`gallery:${id}`, JSON.stringify(updated)),
+      saveGalleryIndex(env, index),
+    ]);
+    return jsonResponse(updated);
   }
 
   // DELETE /api/gallery/:id
   if (galleryIdMatch && request.method === 'DELETE') {
     const id = galleryIdMatch[1];
-    const photos = await getGallery(env);
-    const filtered = photos.filter(p => p.id !== id);
-    if (filtered.length === photos.length) {
+    const index = await getGalleryIndex(env);
+    const filtered = index.filter(p => p.id !== id);
+    if (filtered.length === index.length) {
       return jsonResponse({ error: 'Not found' }, 404);
     }
-    await saveGallery(env, filtered);
+    await Promise.all([
+      env.EVENTS_KV.delete(`gallery:${id}`),
+      saveGalleryIndex(env, filtered),
+    ]);
     return jsonResponse({ ok: true });
   }
 

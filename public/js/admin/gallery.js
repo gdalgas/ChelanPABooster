@@ -46,7 +46,7 @@ function galleryThumbHTML(p) {
 galleryImageInput.addEventListener('change', async () => {
   const file = galleryImageInput.files[0];
   if (!file) { pendingGalleryImage = ''; galleryImagePreview.classList.remove('visible'); return; }
-  pendingGalleryImage = await resizeImage(file, 1200, 0.75);
+  pendingGalleryImage = await resizeImage(file, 900, 0.70);
   galleryImagePreview.src = pendingGalleryImage;
   galleryImagePreview.classList.add('visible');
 });
