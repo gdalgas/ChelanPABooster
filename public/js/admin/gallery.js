@@ -43,16 +43,12 @@ function galleryThumbHTML(p) {
   </div>`;
 }
 
-galleryImageInput.addEventListener('change', () => {
+galleryImageInput.addEventListener('change', async () => {
   const file = galleryImageInput.files[0];
   if (!file) { pendingGalleryImage = ''; galleryImagePreview.classList.remove('visible'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    pendingGalleryImage = e.target.result;
-    galleryImagePreview.src = pendingGalleryImage;
-    galleryImagePreview.classList.add('visible');
-  };
-  reader.readAsDataURL(file);
+  pendingGalleryImage = await resizeImage(file, 1200, 0.75);
+  galleryImagePreview.src = pendingGalleryImage;
+  galleryImagePreview.classList.add('visible');
 });
 
 galleryForm.addEventListener('submit', async (e) => {

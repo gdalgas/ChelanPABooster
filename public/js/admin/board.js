@@ -54,16 +54,12 @@ function memberRowHTML(m) {
   </div>`;
 }
 
-boardImageInput.addEventListener('change', () => {
+boardImageInput.addEventListener('change', async () => {
   const file = boardImageInput.files[0];
   if (!file) { pendingImageBase64 = ''; boardImagePreview.classList.remove('visible'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    pendingImageBase64 = e.target.result;
-    boardImagePreview.src = pendingImageBase64;
-    boardImagePreview.classList.add('visible');
-  };
-  reader.readAsDataURL(file);
+  pendingImageBase64 = await resizeImage(file, 400, 0.8);
+  boardImagePreview.src = pendingImageBase64;
+  boardImagePreview.classList.add('visible');
 });
 
 boardForm.addEventListener('submit', async (e) => {
