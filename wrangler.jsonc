@@ -4,7 +4,14 @@
 	"main": "src/index.js",
 	"compatibility_date": "2025-09-27",
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"invocation_logs": true
+		},
+			"traces": {
+			"enabled": false
+		}
 	},
 	"assets": {
 		// Static files served by the Worker via env.ASSETS.fetch()
