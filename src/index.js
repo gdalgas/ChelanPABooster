@@ -383,8 +383,14 @@ async function handleApi(request, env, url) {
       ...sanitizePhoto(body),
     };
     const index = await getGalleryIndex(env);
+    // Migrate any old-format entries that still have inline image data
+    // before saveGalleryIndex strips them.
+    const migrationWrites = index
+      .filter(e => e.image)
+      .map(e => env.EVENTS_KV.put(`gallery:${e.id}`, JSON.stringify(e)));
     index.push(photo);
     await Promise.all([
+      ...migrationWrites,
       env.EVENTS_KV.put(`gallery:${photo.id}`, JSON.stringify(photo)),
       saveGalleryIndex(env, index),
     ]);
@@ -401,14 +407,19 @@ async function handleApi(request, env, url) {
     try { body = await request.json(); } catch {
       return jsonResponse({ error: 'Invalid JSON' }, 400);
     }
-    const raw = await env.EVENTS_KV.get(`gallery:${id}`);
-    if (!raw) return jsonResponse({ error: 'Not found' }, 404);
-    const existing = JSON.parse(raw);
-    const updated = { ...existing, ...sanitizePhoto(body, existing) };
     const index = await getGalleryIndex(env);
     const idx = index.findIndex(p => p.id === id);
-    if (idx !== -1) index[idx] = updated;
+    if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
+    const existing = index[idx];
+    const raw = await env.EVENTS_KV.get(`gallery:${id}`);
+    const base = raw ? JSON.parse(raw) : existing;
+    const updated = { ...base, ...sanitizePhoto(body, base) };
+    const migrationWrites = index
+      .filter(e => e.image && e.id !== id)
+      .map(e => env.EVENTS_KV.put(`gallery:${e.id}`, JSON.stringify(e)));
+    index[idx] = updated;
     await Promise.all([
+      ...migrationWrites,
       env.EVENTS_KV.put(`gallery:${id}`, JSON.stringify(updated)),
       saveGalleryIndex(env, index),
     ]);
@@ -423,7 +434,11 @@ async function handleApi(request, env, url) {
     if (filtered.length === index.length) {
       return jsonResponse({ error: 'Not found' }, 404);
     }
+    const migrationWrites = filtered
+      .filter(e => e.image)
+      .map(e => env.EVENTS_KV.put(`gallery:${e.id}`, JSON.stringify(e)));
     await Promise.all([
+      ...migrationWrites,
       env.EVENTS_KV.delete(`gallery:${id}`),
       saveGalleryIndex(env, filtered),
     ]);
