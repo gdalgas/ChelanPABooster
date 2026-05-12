@@ -146,16 +146,11 @@ function sanitizeMember(body, existing = {}) {
 async function getGalleryIndex(env) {
   const raw = await env.EVENTS_KV.get('gallery');
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    // Backwards-compat: old format stored full objects including images in the index.
-    // Strip image data so the index is metadata-only going forward.
-    return parsed.map(({ image: _image, ...meta }) => meta);
-  } catch { return []; }
+  try { return JSON.parse(raw); } catch { return []; }
 }
 
 async function saveGalleryIndex(env, index) {
-  // Index stores only metadata — never image data.
+  // Index stores only metadata — strip image data so the index stays small.
   const meta = index.map(({ image: _image, ...m }) => m);
   await env.EVENTS_KV.put('gallery', JSON.stringify(meta));
 }
@@ -163,16 +158,27 @@ async function saveGalleryIndex(env, index) {
 async function getGallery(env) {
   const index = await getGalleryIndex(env);
   if (!index.length) return [];
+  const migrationWrites = [];
   const photos = await Promise.all(
-    index.map(async meta => {
-      const raw = await env.EVENTS_KV.get(`gallery:${meta.id}`);
+    index.map(async entry => {
+      const raw = await env.EVENTS_KV.get(`gallery:${entry.id}`);
       if (raw) {
         try { return JSON.parse(raw); } catch { return null; }
       }
-      // Backwards-compat: photo not yet migrated to its own key — return meta only.
-      return meta;
+      // Old format: image was stored inline in the index entry.
+      // Migrate it to its own key now so future reads are fast.
+      if (entry.image) {
+        migrationWrites.push(env.EVENTS_KV.put(`gallery:${entry.id}`, JSON.stringify(entry)));
+        return entry;
+      }
+      return null;
     })
   );
+  // Fire-and-forget migrations + update index to strip images
+  if (migrationWrites.length) {
+    migrationWrites.push(saveGalleryIndex(env, index));
+    await Promise.all(migrationWrites);
+  }
   return photos.filter(Boolean);
 }
 
