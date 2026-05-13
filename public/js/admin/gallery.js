@@ -46,9 +46,15 @@ function galleryThumbHTML(p) {
 galleryImageInput.addEventListener('change', async () => {
   const file = galleryImageInput.files[0];
   if (!file) { pendingGalleryImage = ''; galleryImagePreview.classList.remove('visible'); return; }
-  pendingGalleryImage = await resizeImage(file, 900, 0.70);
-  galleryImagePreview.src = pendingGalleryImage;
-  galleryImagePreview.classList.add('visible');
+  try {
+    pendingGalleryImage = await resizeImage(file, 900, 0.70);
+    galleryImagePreview.src = pendingGalleryImage;
+    galleryImagePreview.classList.add('visible');
+  } catch (err) {
+    pendingGalleryImage = '';
+    galleryImagePreview.classList.remove('visible');
+    setGalleryFormMsg(err.message || 'Failed to process image.', 'error');
+  }
 });
 
 galleryForm.addEventListener('submit', async (e) => {

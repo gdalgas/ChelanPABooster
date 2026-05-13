@@ -57,9 +57,15 @@ function memberRowHTML(m) {
 boardImageInput.addEventListener('change', async () => {
   const file = boardImageInput.files[0];
   if (!file) { pendingImageBase64 = ''; boardImagePreview.classList.remove('visible'); return; }
-  pendingImageBase64 = await resizeImage(file, 400, 0.8);
-  boardImagePreview.src = pendingImageBase64;
-  boardImagePreview.classList.add('visible');
+  try {
+    pendingImageBase64 = await resizeImage(file, 400, 0.8);
+    boardImagePreview.src = pendingImageBase64;
+    boardImagePreview.classList.add('visible');
+  } catch (err) {
+    pendingImageBase64 = '';
+    boardImagePreview.classList.remove('visible');
+    setBoardFormMsg(err.message || 'Failed to process image.', 'error');
+  }
 });
 
 boardForm.addEventListener('submit', async (e) => {

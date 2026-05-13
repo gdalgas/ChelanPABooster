@@ -59,10 +59,49 @@ export default {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://chelanpabooster.org',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+
+const MAX_BODY_BYTES = 5 * 1024 * 1024; // 5 MB
+
+async function readBody(request) {
+  const len = parseInt(request.headers.get('content-length') || '0', 10);
+  if (len > MAX_BODY_BYTES) return null;
+  try {
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) return null;
+    return JSON.parse(text);
+  } catch {
+    return undefined; // parse error vs size error distinguished by caller
+  }
+}
+
+// Rate limiting for login attempts (max 10 per 15 min per IP)
+async function checkLoginRateLimit(request, env) {
+  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+  const key = `ratelimit:login:${ip}`;
+  const count = parseInt(await env.EVENTS_KV.get(key) || '0', 10);
+  if (count >= 10) return false;
+  await env.EVENTS_KV.put(key, String(count + 1), { expirationTtl: 900 });
+  return true;
+}
+
+function isSafeUrl(value) {
+  if (!value) return true;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false; // relative or malformed — reject
+  }
+}
+
+function isSafeImage(value) {
+  if (!value) return true;
+  return /^data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+/]+=*$/.test(value);
+}
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -95,6 +134,7 @@ async function saveEvents(env, events) {
 }
 
 function sanitizeEvent(body, existing = {}) {
+  const url = String(body.url ?? existing.url ?? '').trim();
   return {
     ...existing,
     name:     String(body.name     ?? existing.name     ?? '').trim(),
@@ -102,7 +142,7 @@ function sanitizeEvent(body, existing = {}) {
     date:     String(body.date     ?? existing.date     ?? '').trim(),
     time:     String(body.time     ?? existing.time     ?? '').trim(),
     location: String(body.location ?? existing.location ?? '').trim(),
-    url:      String(body.url      ?? existing.url      ?? '').trim(),
+    url:      isSafeUrl(url) ? url : '',
     urlLabel: String(body.urlLabel ?? existing.urlLabel ?? 'View Details').trim(),
   };
 }
@@ -124,12 +164,13 @@ async function saveBoard(env, members) {
 }
 
 function sanitizeMember(body, existing = {}) {
+  const image = String(body.image ?? existing.image ?? '').trim();
   return {
     ...existing,
     name:  String(body.name  ?? existing.name  ?? '').trim(),
     role:  String(body.role  ?? existing.role  ?? '').trim(),
     bio:   String(body.bio   ?? existing.bio   ?? '').trim(),
-    image: String(body.image ?? existing.image ?? '').trim(),
+    image: isSafeImage(image) ? image : '',
     order: Number.isFinite(Number(body.order)) ? Number(body.order) : (existing.order ?? 0),
   };
 }
@@ -183,10 +224,11 @@ async function getGallery(env) {
 }
 
 function sanitizePhoto(body, existing = {}) {
+  const image = String(body.image ?? existing.image ?? '').trim();
   return {
     ...existing,
     caption: String(body.caption ?? existing.caption ?? '').trim(),
-    image:   String(body.image   ?? existing.image   ?? '').trim(),
+    image:   isSafeImage(image) ? image : '',
     order:   Number.isFinite(Number(body.order)) ? Number(body.order) : (existing.order ?? 0),
   };
 }
@@ -251,12 +293,14 @@ async function handleApi(request, env, url) {
   // ── Public: POST /api/admin/login ───────────────────────
   if (url.pathname === '/api/admin/login' && request.method === 'POST') {
     if (!env.ADMIN_PASSWORD) {
-      return jsonResponse({ error: 'Admin not configured. Set ADMIN_PASSWORD secret.' }, 503);
+      return jsonResponse({ error: 'Unauthorized' }, 401);
     }
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
+    if (!await checkLoginRateLimit(request, env)) {
+      return jsonResponse({ error: 'Too many attempts. Try again later.' }, 429);
     }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     if (body.password === env.ADMIN_PASSWORD) {
       return jsonResponse({ ok: true });
     }
@@ -270,10 +314,9 @@ async function handleApi(request, env, url) {
 
   // POST /api/events – create
   if (url.pathname === '/api/events' && request.method === 'POST') {
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     if (!body.name || !body.date) {
       return jsonResponse({ error: 'name and date are required' }, 400);
     }
@@ -294,10 +337,9 @@ async function handleApi(request, env, url) {
   // PUT /api/events/:id – update
   if (eventIdMatch && request.method === 'PUT') {
     const id = eventIdMatch[1];
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     const events = await getEvents(env);
     const idx = events.findIndex(e => e.id === id);
     if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
@@ -320,10 +362,9 @@ async function handleApi(request, env, url) {
 
   // POST /api/board – create board member
   if (url.pathname === '/api/board' && request.method === 'POST') {
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     if (!body.name || !body.role) {
       return jsonResponse({ error: 'name and role are required' }, 400);
     }
@@ -344,10 +385,9 @@ async function handleApi(request, env, url) {
   // PUT /api/board/:id – update
   if (boardIdMatch && request.method === 'PUT') {
     const id = boardIdMatch[1];
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     const members = await getBoard(env);
     const idx = members.findIndex(m => m.id === id);
     if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
@@ -370,10 +410,9 @@ async function handleApi(request, env, url) {
 
   // POST /api/gallery – upload photo
   if (url.pathname === '/api/gallery' && request.method === 'POST') {
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     if (!body.image) {
       return jsonResponse({ error: 'image is required' }, 400);
     }
@@ -403,10 +442,9 @@ async function handleApi(request, env, url) {
   // PUT /api/gallery/:id – update caption/order
   if (galleryIdMatch && request.method === 'PUT') {
     const id = galleryIdMatch[1];
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     const index = await getGalleryIndex(env);
     const idx = index.findIndex(p => p.id === id);
     if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);
@@ -447,10 +485,9 @@ async function handleApi(request, env, url) {
 
   // PUT /api/sponsors/settings – toggle banner visibility
   if (url.pathname === '/api/sponsors/settings' && request.method === 'PUT') {
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     const data = await getSponsors(env);
     data.visible = body.visible !== false;
     await saveSponsors(env, data);
@@ -459,10 +496,9 @@ async function handleApi(request, env, url) {
 
   // POST /api/sponsors – create
   if (url.pathname === '/api/sponsors' && request.method === 'POST') {
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     if (!body.name) return jsonResponse({ error: 'name is required' }, 400);
     const data = await getSponsors(env);
     const sponsor = {
@@ -481,10 +517,9 @@ async function handleApi(request, env, url) {
   // PUT /api/sponsors/:id – update
   if (sponsorIdMatch && request.method === 'PUT') {
     const id = sponsorIdMatch[1];
-    let body;
-    try { body = await request.json(); } catch {
-      return jsonResponse({ error: 'Invalid JSON' }, 400);
-    }
+    const body = await readBody(request);
+    if (body === null) return jsonResponse({ error: 'Request too large' }, 413);
+    if (body === undefined) return jsonResponse({ error: 'Invalid JSON' }, 400);
     const data = await getSponsors(env);
     const idx = data.items.findIndex(s => s.id === id);
     if (idx === -1) return jsonResponse({ error: 'Not found' }, 404);

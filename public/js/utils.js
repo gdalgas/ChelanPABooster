@@ -25,6 +25,9 @@ function escAttr(str) {
  * @param {number} quality – JPEG quality 0–1 (default 0.75)
  */
 function resizeImage(file, maxDim = 1200, quality = 0.75) {
+  if (file.size > 30 * 1024 * 1024) {
+    return Promise.reject(new Error('File is too large (max 30 MB).'));
+  }
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
